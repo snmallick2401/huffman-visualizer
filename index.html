@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Huffman Coding Visualizer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
+        :root {
+            /* Default Dark Theme Palette */
+            --bg-main: #09090b;
+            --bg-spotlight: #18181b;
+            --header-bg: rgba(9, 9, 11, 0.6);
+            --card-bg: rgba(24, 24, 27, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            
+            /* UI Elements */
+            --input-bg: rgba(255, 255, 255, 0.03);
+            --button-bg: rgba(255, 255, 255, 0.05);
+            --button-border: rgba(255, 255, 255, 0.1);
+            --button-text-hover: #000;
+            --grid-dots: rgba(255, 255, 255, 0.04);
+            --node-fill: #18181b;
+            
+            /* Accents */
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --highlight: #f43f5e;
+            --chip-bg: rgba(56, 189, 248, 0.05);
+            --chip-border: rgba(56, 189, 248, 0.2);
+            
+            /* Typography */
+            --text-main: #f8fafc;
+            --text-muted: #a1a1aa;
+            
+            /* Animation timings */
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        [data-theme="light"] {
+            /* Light Theme Palette */
+            --bg-main: #f1f5f9;
+            --bg-spotlight: #ffffff;
+            --header-bg: rgba(255, 255, 255, 0.6);
+            --card-bg: rgba(255, 255, 255, 0.7);
+            --card-border: rgba(0, 0, 0, 0.08);
+            
+            /* UI Elements */
+            --input-bg: rgba(0, 0, 0, 0.03);
+            --button-bg: rgba(0, 0, 0, 0.05);
+            --button-border: rgba(0, 0, 0, 0.1);
+            --button-text-hover: #fff;
+            --grid-dots: rgba(0, 0, 0, 0.06);
+            --node-fill: #ffffff;
+            
+            /* Accents */
+            --accent: #0284c7;
+            --accent-hover: #0369a1;
+            --highlight: #e11d48;
+            --chip-bg: rgba(2, 132, 199, 0.08);
+            --chip-border: rgba(2, 132, 199, 0.2);
+            
+            /* Typography */
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: radial-gradient(circle at 50% 0%, var(--bg-spotlight) 0%, var(--bg-main) 70%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+            transition: background 0.4s ease, color 0.4s ease;
+        }
+
+        header {
+            padding: 24px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            border-bottom: 1px solid var(--card-border);
+            background: var(--header-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 10;
+            transition: all 0.4s ease;
+        }
+
+        h2 {
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        input {
+            padding: 10px 18px;
+            border-radius: 99px;
+            border: 1px solid var(--card-border);
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            background: var(--bg-spotlight);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 99px;
+            border: 1px solid var(--button-border);
+            background: var(--button-bg);
+            color: var(--text-main);
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        button:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--button-text-hover);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        #themeToggle {
+            margin-left: auto;
+            border-style: dashed;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        /* Glassmorphism Panels */
+        .panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 24px;
+            border-radius: 20px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            animation: slideUp 0.6s var(--ease-spring) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: background 0.4s ease, border-color 0.4s ease;
+        }
+
+        .panel:nth-child(1) { animation-delay: 0.1s; }
+        .panel:nth-child(2) { animation-delay: 0.2s; }
+        .panel:nth-child(3) { animation-delay: 0.3s; }
+
+        #stats {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #stats strong {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        #canvasWrap {
+            height: 500px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            position: relative;
+            background: radial-gradient(var(--grid-dots) 1px, transparent 1px);
+            background-size: 24px 24px; 
+            border-radius: 16px;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            min-width: 800px;
+        }
+
+        /* SVG Animations */
+        .node {
+            fill: var(--node-fill);
+            stroke: var(--accent);
+            stroke-width: 2.5;
+            transform-origin: center;
+            transform-box: fill-box;
+            opacity: 0;
+            animation: popIn 0.5s var(--ease-spring) forwards;
+            transition: fill 0.4s ease;
+        }
+
+        .highlight {
+            stroke: var(--highlight);
+            stroke-width: 4;
+            filter: drop-shadow(0 0 12px rgba(244, 63, 94, 0.4));
+            transition: all 0.3s ease;
+        }
+
+        .label {
+            fill: var(--text-main);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            text-anchor: middle;
+            dominant-baseline: central;
+            opacity: 0;
+            animation: fadeIn 0.4s ease forwards 0.2s;
+        }
+
+        .edge {
+            stroke: var(--text-muted);
+            stroke-width: 2;
+            stroke-dasharray: 500;
+            stroke-dashoffset: 500;
+            opacity: 0.5;
+            animation: drawLine 0.6s ease-out forwards;
+        }
+
+        .edgeText {
+            fill: var(--text-muted);
+            font-size: 12px;
+            font-weight: 500;
+            font-family: 'JetBrains Mono', monospace;
+            opacity: 0;
+            animation: fadeIn 0.4s ease forwards 0.3s;
+        }
+
+        #codes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .chip {
+            padding: 8px 16px;
+            background: var(--chip-bg);
+            border: 1px solid var(--chip-border);
+            border-radius: 99px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--text-main);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            animation: popIn 0.4s var(--ease-spring) forwards;
+        }
+
+        .chip strong {
+            color: var(--accent);
+        }
+
+        .site-footer {
+            text-align: center;
+            padding: 2rem 0 2rem;
+            margin-top: auto;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .site-footer a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .site-footer a:hover {
+            color: var(--accent);
+        }
+
+        /* Keyframes */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.5); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes drawLine {
+            to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { height: 8px; width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--button-border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2>🌳 Huffman Visualizer</h2>
+    <div class="controls">
+        <input id="textInput" placeholder="Enter text to encode..." value="HELLO WORLD" autocomplete="off"/>
+        <button onclick="start()">Animate Build</button>
+        <button onclick="instant()">Instant Build</button>
+        <button onclick="encodeText()">Show Encoded</button>
+        <button onclick="decodeText()">Visualize Decode</button>
+        <button id="themeToggle" onclick="toggleTheme()">☀️ Light Mode</button>
+    </div>
+</header>
+
+<div class="container">
+    <div class="panel" id="stats">
+        <span>Waiting for input...</span>
+    </div>
+    <div class="panel" id="canvasWrap">
+        <svg id="svg"></svg>
+    </div>
+    <div class="panel">
+        <div id="codes">
+            <span style="color: var(--text-muted); font-size: 14px;">No codes generated yet.</span>
+        </div>
+    </div>
+</div>
+
+<footer class="site-footer">
+    <p>Made with ❤️ by <a href="https://www.linkedin.com/in/snmallick2401/" target="_blank">S N Mallick</a></p>
+</footer>
+
+<script>
+    // --- Theme Logic ---
+    function toggleTheme() {
+        const body = document.documentElement;
+        const currentTheme = body.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        
+        body.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        
+        document.getElementById('themeToggle').innerText = newTheme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
+    }
+
+    // Load saved theme on startup
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.getElementById('themeToggle').innerText = savedTheme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
+    });
+
+    // --- Huffman Logic ---
+    const svg = document.getElementById('svg');
+    let currentRoot = null;
+
+    function buildPQ(text) {
+        let f = {};
+        for (let c of text) { f[c] = (f[c] || 0) + 1; }
+        let arr = Object.entries(f).map(([c, v]) => ({ char: c, freq: v, l: null, r: null }));
+        arr.sort((a, b) => a.freq - b.freq);
+        return arr;
+    }
+
+    function mergeOnce(arr) {
+        let a = arr.shift();
+        let b = arr.shift();
+        let n = { char: a.char + b.char, freq: a.freq + b.freq, l: a, r: b };
+        arr.push(n);
+        arr.sort((x, y) => x.freq - y.freq);
+        return n;
+    }
+
+    function codes(root) {
+        let c = {};
+        function dfs(n, s) {
+            if (!n.l && !n.r) c[n.char] = s || '0';
+            if (n.l) dfs(n.l, s + '0');
+            if (n.r) dfs(n.r, s + '1');
+        }
+        dfs(root, '');
+        return c;
+    }
+
+    function layout(root) {
+        let x = 0;
+        function dfs(n, d) {
+            if (!n) return;
+            if (n.l) dfs(n.l, d + 1);
+            n.x = x * 65 + 60; 
+            n.y = d * 85 + 60;
+            x++;
+            if (n.r) dfs(n.r, d + 1);
+        }
+        dfs(root, 0);
+    }
+
+    function draw(root) {
+        svg.innerHTML = '';
+        function walk(n) {
+            if (!n) return;
+            if (n.l) { line(n, n.l, '0'); walk(n.l); }
+            if (n.r) { line(n, n.r, '1'); walk(n.r); }
+            node(n);
+        }
+        walk(root);
+    }
+
+    function line(a, b, labelTxt) {
+        let e = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        e.setAttribute('x1', a.x);
+        e.setAttribute('y1', a.y + 18); 
+        e.setAttribute('x2', b.x);
+        e.setAttribute('y2', b.y - 18);
+        e.setAttribute('class', 'edge');
+        svg.appendChild(e);
+
+        let t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        t.setAttribute('x', (a.x + b.x) / 2 - 12);
+        t.setAttribute('y', (a.y + b.y) / 2);
+        t.setAttribute('class', 'edgeText');
+        t.textContent = labelTxt;
+        svg.appendChild(t);
+    }
+
+    function node(n) {
+        let c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c.setAttribute('cx', n.x);
+        c.setAttribute('cy', n.y);
+        c.setAttribute('r', 20); 
+        c.setAttribute('class', 'node');
+        
+        let t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        t.setAttribute('x', n.x);
+        t.setAttribute('y', n.y);
+        t.setAttribute('class', 'label');
+        t.textContent = (!n.l && !n.r) ? `${n.char}` : n.freq; 
+
+        svg.appendChild(c);
+        svg.appendChild(t);
+    }
+
+    function renderCodes(c) {
+        let el = document.getElementById('codes');
+        el.innerHTML = '';
+        let delay = 0;
+        for (let k in c) {
+            let d = document.createElement('div');
+            d.className = 'chip';
+            d.style.animationDelay = `${delay}s`;
+            let displayChar = k === ' ' ? 'Space' : k;
+            d.innerHTML = `<strong>${displayChar}</strong> : ${c[k]}`;
+            el.appendChild(d);
+            delay += 0.05;
+        }
+    }
+
+    function showStats(text, c) {
+        let bits = text.length * 8;
+        let enc = 0;
+        for (let ch of text) enc += c[ch].length;
+        let compression = ((1 - enc/bits) * 100).toFixed(1);
+        
+        document.getElementById('stats').innerHTML = `
+            <span>ASCII Size: <strong>${bits} bits</strong></span>
+            <span>Huffman Size: <strong>${enc} bits</strong></span>
+            <span>Compression: <strong style="color: ${compression > 0 ? 'var(--accent)' : 'var(--highlight)'}">${compression}%</strong></span>
+        `;
+    }
+
+    // --- Interactive Functions ---
+
+    async function start() {
+        let t = document.getElementById('textInput').value;
+        if (!t) return;
+        
+        let arr = buildPQ(t);
+        while (arr.length > 1) {
+            let n = mergeOnce(arr);
+            layout(n);
+            draw(n);
+            await new Promise(r => setTimeout(r, 700)); 
+        }
+        
+        currentRoot = arr[0];
+        layout(currentRoot);
+        draw(currentRoot);
+        
+        let c = codes(currentRoot);
+        renderCodes(c);
+        showStats(t, c);
+    }
+
+    function instant() {
+        let t = document.getElementById('textInput').value;
+        if (!t) return;
+        
+        let arr = buildPQ(t);
+        while (arr.length > 1) mergeOnce(arr);
+        
+        currentRoot = arr[0];
+        layout(currentRoot);
+        draw(currentRoot);
+        
+        let c = codes(currentRoot);
+        renderCodes(c);
+        showStats(t, c);
+    }
+
+    function encodeText() {
+        let t = document.getElementById('textInput').value;
+        if(!t) return;
+        let arr = buildPQ(t);
+        while (arr.length > 1) mergeOnce(arr);
+        let c = codes(arr[0]);
+        
+        let res = "";
+        for (let ch of t) res += c[ch];
+        alert("Encoded Binary string:\n" + res);
+    }
+
+    async function decodeText() {
+        let t = document.getElementById('textInput').value;
+        if (!t || !currentRoot) {
+            alert("Please build the tree first!");
+            return;
+        }
+        
+        let arr = buildPQ(t);
+        while (arr.length > 1) mergeOnce(arr);
+        let root = arr[0];
+        let c = codes(root);
+        
+        let encoded = "";
+        for (let ch of t) encoded += c[ch];
+
+        let currentNode = root;
+        let decoded = "";
+        
+        for (let bit of encoded) {
+            currentNode = (bit === '0') ? currentNode.l : currentNode.r;
+            highlight(currentNode);
+            
+            await new Promise(r => setTimeout(r, 500)); 
+            
+            if (!currentNode.l && !currentNode.r) {
+                decoded += currentNode.char;
+                currentNode = root;
+                draw(currentRoot); 
+            }
+        }
+        alert("Finished Decoding:\n" + decoded);
+    }
+
+    function highlight(n) {
+        draw(currentRoot); 
+        let circles = svg.querySelectorAll('circle');
+        circles.forEach(c => {
+            let cx = parseFloat(c.getAttribute('cx'));
+            let cy = parseFloat(c.getAttribute('cy'));
+            if (Math.abs(cx - n.x) < 1 && Math.abs(cy - n.y) < 1) {
+                c.classList.add('highlight');
+            }
+        });
+    }
+    
+    // Run instantly on load
+    window.onload = instant;
+</script>
+</body>
+</html>
